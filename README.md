@@ -1,36 +1,71 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Event Lead Manager
 
-## Getting Started
+A full-stack application for capturing, organizing, and managing leads collected at business events.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Add leads
+- Edit leads
+- Delete leads
+- Search leads by name, company, or email
+- Filter leads by follow-up status and event
+- PostgreSQL database persistence
+- AI-generated lead summaries
+- AI-generated follow-up messages
+- Responsive dashboard interface
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech Stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Next.js
+- TypeScript
+- Tailwind CSS
+- PostgreSQL
+- Prisma ORM
+- Next.js API Routes
+- AI integration with a mock fallback
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Lead Data
 
-## Learn More
+Each lead contains:
 
-To learn more about Next.js, take a look at the following resources:
+- Name
+- Company
+- Email
+- Event
+- Notes
+- Follow-up status
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Follow-up statuses:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- PENDING
+- CONTACTED
+- FOLLOW_UP
+- CLOSED
 
-## Deploy on Vercel
+## Project Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```text
+app/
+  api/
+    ai/
+    leads/
+  page.tsx
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+components/
+  AIResultModal.tsx
+  DeleteConfirmModal.tsx
+  LeadCard.tsx
+  LeadFilters.tsx
+  LeadFormModal.tsx
+  LeadList.tsx
+  StatusBadge.tsx
+
+lib/
+  ai.ts
+  prisma.ts
+
+prisma/
+  schema.prisma
+
+types/
+  lead.ts

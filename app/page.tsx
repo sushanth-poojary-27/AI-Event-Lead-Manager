@@ -1,69 +1,279 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
+
+import {
+  Lead,
+  LeadFormData,
+  LeadFilterState,
+} from "@/types/lead";
+
+import { LeadFilters } from "@/components/LeadFilters";
+import { LeadList } from "@/components/LeadList";
+import { LeadFormModal } from "@/components/LeadFormModal";
+import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
+
+export default function EventLeadDashboard() {
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [filters, setFilters] = useState<LeadFilterState>({
+    search: "",
+    status: "",
+    event: "",
+  });
+
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [deletingLead, setDeletingLead] = useState<Lead | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const fetchLeads = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const params = new URLSearchParams();
+
+      if (filters.search) {
+        params.append("search", filters.search);
+      }
+
+      if (filters.status) {
+        params.append("status", filters.status);
+      }
+
+      if (filters.event) {
+        params.append("event", filters.event);
+      }
+
+      const query = params.toString();
+      const url = query
+        ? `/api/leads?${query}`
+        : "/api/leads";
+
+      const res = await fetch(url);
+
+      if (!res.ok) {
+        throw new Error("Failed to load event leads.");
+      }
+
+      const data: Lead[] = await res.json();
+      setLeads(data);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred.";
+
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [filters]);
+
+  useEffect(() => {
+    fetchLeads();
+  }, [fetchLeads]);
+
+  const availableEvents = useMemo(() => {
+    const eventsSet = new Set<string>();
+
+    leads.forEach((lead) => {
+      if (lead.event) {
+        eventsSet.add(lead.event);
+      }
+    });
+
+    return Array.from(eventsSet);
+  }, [leads]);
+
+  const handleFormSubmit = async (formData: LeadFormData) => {
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const isEditing = Boolean(editingLead);
+
+      const url = isEditing
+        ? `/api/leads/${editingLead?.id}`
+        : "/api/leads";
+
+      const method = isEditing ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(
+          errorData.error || "Failed to save lead."
+        );
+      }
+
+      setIsFormModalOpen(false);
+      setEditingLead(null);
+
+      await fetchLeads();
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "An error occurred while saving.";
+
+      setError(message);
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingLead) return;
+
+    setIsDeleting(true);
+    setError(null);
+
+    try {
+      const res = await fetch(
+        `/api/leads/${deletingLead.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!res.ok) {
+        const errorData = await res.json();
+
+        throw new Error(
+          errorData.error || "Failed to delete lead."
+        );
+      }
+
+      setDeletingLead(null);
+
+      await fetchLeads();
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "An error occurred while deleting.";
+
+      setError(message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleOpenEdit = (lead: Lead) => {
+    setEditingLead(lead);
+    setIsFormModalOpen(true);
+  };
+
+  const handleOpenCreate = () => {
+    setEditingLead(null);
+    setIsFormModalOpen(true);
+  };
+
+  const handleResetFilters = () => {
+    setFilters({
+      search: "",
+      status: "",
+      event: "",
+    });
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-900 text-xs font-bold text-white">
+                E8
+              </div>
+
+              <h1 className="text-xl font-bold tracking-tight text-slate-900">
+                Event Lead Manager
+              </h1>
+            </div>
+
+            <p className="mt-0.5 text-xs text-slate-500">
+              Capture, organize, and track event connections seamlessly
+            </p>
+          </div>
+
+          <button
+            onClick={handleOpenCreate}
+            className="inline-flex items-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-slate-800"
+          >
+            <span className="mr-1.5 text-base">+</span>
+            Add Lead
+          </button>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        {error && (
+          <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            <span>{error}</span>
+
+            <button
+              onClick={() => setError(null)}
+              className="font-semibold hover:underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        <LeadFilters
+          filters={filters}
+          onChange={setFilters}
+          availableEvents={availableEvents}
+          onReset={handleResetFilters}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        <LeadList
+          leads={leads}
+          isLoading={isLoading}
+          onEdit={handleOpenEdit}
+          onDelete={(lead) => setDeletingLead(lead)}
+          onAddLeadClick={handleOpenCreate}
+        />
       </main>
+
+      <LeadFormModal
+        isOpen={isFormModalOpen}
+        onClose={() => {
+          setIsFormModalOpen(false);
+          setEditingLead(null);
+        }}
+        onSubmit={handleFormSubmit}
+        initialData={editingLead}
+        isSubmitting={isSubmitting}
+      />
+
+      <DeleteConfirmModal
+        isOpen={Boolean(deletingLead)}
+        leadName={deletingLead?.name || ""}
+        onClose={() => setDeletingLead(null)}
+        onConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 }
