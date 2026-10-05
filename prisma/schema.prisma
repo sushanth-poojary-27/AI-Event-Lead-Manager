@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum FollowUpStatus {
+  PENDING
+  CONTACTED
+  FOLLOW_UP
+  CLOSED
+}
+
+model Lead {
+  id             Int            @id @default(autoincrement())
+  name           String
+  company        String
+  email          String
+  event          String
+  notes          String
+  followUpStatus FollowUpStatus @default(PENDING)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
