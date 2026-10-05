@@ -29,7 +29,7 @@ ${notes ? `I especially appreciated our conversation about ${notes}.` : "I appre
 I'd be happy to continue the conversation and explore how we might stay in touch.
 
 Best,
-Sushanth`;
+Even8.io`;
 }
 
 export async function generateLeadAI(
